@@ -3,6 +3,7 @@ namespace Network
     public enum NetworkMoveInputType
     {
         MoveLeft,
-        MoveRight
+        MoveRight,
+        Jump
     }
 }

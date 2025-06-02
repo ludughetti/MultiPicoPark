@@ -2,7 +2,7 @@ using Fusion;
 
 namespace Network
 {
-    public struct NetworkInputData : INetworkInput
+    public struct NetworkMoveInputData : INetworkInput
     {
         private byte _buttonsPressed;
         

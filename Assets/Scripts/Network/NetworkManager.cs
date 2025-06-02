@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Fusion;
 using Fusion.Sockets;
+using Network.ServerData;
 using Player;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -12,9 +13,16 @@ namespace Network
 {
     public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, INetworkRunnerCallbacks
     {
+        // Server settings
+        [Header("Server Settings")]
         [SerializeField] private NetworkPrefabRef playerPrefab;
         [SerializeField] private Transform[] spawnPositions;
+        
+        // Input actions
         [SerializeField] private InputActionReference moveAction;
+        [SerializeField] private InputActionReference jumpAction;
+        
+        public MovementSettings movementSettings;
         
         private readonly Dictionary<PlayerRef, NetworkObject> _activePlayers = new ();
         private NetworkRunner _networkRunner;
@@ -131,7 +139,7 @@ namespace Network
             if (!LocalPlayer)
                 return;
 
-            var networkInput = new NetworkInputData();
+            var networkInput = new NetworkMoveInputData();
 
             var moveInput = moveAction.action.ReadValue<Vector2>();
 
@@ -145,6 +153,10 @@ namespace Network
                     break;
             }
             
+            var jumpInput = jumpAction.action.ReadValue<float>();
+            if (jumpInput > 0f)
+                networkInput.AddInput(NetworkMoveInputType.Jump);
+            
             input.Set(networkInput);
         }
         
@@ -152,7 +164,7 @@ namespace Network
         public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { }
         public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason) { }
         public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
-        public void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, System.ArraySegment<byte> data) { }
+        public void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, ArraySegment<byte> data) { }
         public void OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey key, float progress) { }
         public void OnSceneLoadDone(NetworkRunner runner) { }
         public void OnSceneLoadStart(NetworkRunner runner) { }
