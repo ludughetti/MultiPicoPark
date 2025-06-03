@@ -13,19 +13,26 @@ namespace Network
 {
     public class NetworkManager : MonoBehaviourSingleton<NetworkManager>, INetworkRunnerCallbacks
     {
-        // Server settings
-        [Header("Server Settings")]
+        [Header("Player Settings")]
         [SerializeField] private NetworkPrefabRef playerPrefab;
-        [SerializeField] private Transform[] spawnPositions;
+        [SerializeField] private List<Transform> playerSpawnPositions;
         
-        // Input actions
+        [Header("Player Input")]
         [SerializeField] private InputActionReference moveAction;
         [SerializeField] private InputActionReference jumpAction;
         
+        [Header("Player Movement")]
+        public Transform playerMinBounds;
+        public Transform playerMaxBounds;
         public MovementSettings movementSettings;
+        
+        [Header("Pick-ups Settings")]
+        [SerializeField] private NetworkPrefabRef coinPrefab;
+        [SerializeField] private List<Transform> coinSpawnPositions;
         
         private readonly Dictionary<PlayerRef, NetworkObject> _activePlayers = new ();
         private NetworkRunner _networkRunner;
+        private int _totalCoinsCollected = 0;
         
         public event Action OnConnected;
         public event Action OnDisconnected;
@@ -49,21 +56,28 @@ namespace Network
         
         private async Task<bool> StartGameSession()
         {
+            Debug.Log("Starting game session...");
             var networkRunnerObject = new GameObject(typeof(NetworkRunner).Name, typeof(NetworkRunner));
 
+            Debug.Log("Getting network runner...");
             _networkRunner = networkRunnerObject.GetComponent<NetworkRunner>();
             _networkRunner.AddCallbacks(this);
-
+            
+            Debug.Log("Setting up game arguments...");
             var startGameArgs = new StartGameArgs()
             {
                 GameMode = GameMode.AutoHostOrClient,
+                SessionName = "MultiPicoPark-Test",
                 SceneManager = _networkRunner.gameObject.AddComponent<NetworkSceneManagerDefault>(),
-                PlayerCount = spawnPositions.Length
+                PlayerCount = playerSpawnPositions.Count,
+                Scene = SceneRef.FromIndex(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex)
             };
 
+            Debug.Log("Starting game...");
             var startTask = _networkRunner.StartGame(startGameArgs);
             await startTask;
 
+            Debug.Log("Game started!");
             return startTask.Result.Ok;
         }
         
@@ -75,9 +89,20 @@ namespace Network
         
         private void SpawnNewPlayer(NetworkRunner runner, PlayerRef player)
         {
-            var spawnPosition = spawnPositions[_activePlayers.Count].position;
+            Debug.Log("Spawning new player...");
+            var spawnPosition = GetRandomSpawnPosition();
             var networkPlayerObject = runner.Spawn(playerPrefab, spawnPosition, Quaternion.identity, player);
+
             _activePlayers[player] = networkPlayerObject;
+        }
+        
+        private Vector3 GetRandomSpawnPosition()
+        {
+            if (playerSpawnPositions == null || playerSpawnPositions.Count == 0)
+                return Vector3.zero; // fallback or handle no positions available
+
+            var randomIndex = UnityEngine.Random.Range(0, playerSpawnPositions.Count);
+            return playerSpawnPositions[randomIndex].position;
         }
         
         private void DespawnPlayer(NetworkRunner runner, PlayerRef player)
@@ -90,6 +115,7 @@ namespace Network
 
         public void OnConnectedToServer(NetworkRunner runner)
         {
+            Debug.Log("Connected to server!");
             if (_networkRunner.IsClient)
                 OnConnected?.Invoke();
         }
@@ -115,10 +141,13 @@ namespace Network
         
         public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
         {
+            Debug.Log("Method OnPlayerJoined triggered for " + player.PlayerId);
             if (runner.IsServer)
+            {
                 SpawnNewPlayer(runner, player);
+            }
 
-            OnNewPlayerJoined?.Invoke("Player_" + player.PlayerId);
+            OnNewPlayerJoined?.Invoke("Event OnNewPlayerJoined triggered for " + player.PlayerId);
         }
 
         public void OnPlayerLeft(NetworkRunner runner, PlayerRef player)
@@ -160,13 +189,40 @@ namespace Network
             input.Set(networkInput);
         }
         
+        private void SpawnCoins()
+        {
+            foreach (var position in coinSpawnPositions)
+            {
+                Debug.Log($"Spawning coin {position.position}");
+                _networkRunner.Spawn(coinPrefab, position.position, Quaternion.identity);
+            }
+        }
+        
+        public void OnCoinCollected(PlayerController player)
+        {
+            player.OnPickUpCollectedRPC();
+    
+            // Optionally:
+            _totalCoinsCollected++; // Global score
+            //CheckIfAllCoinsCollected();
+        }
+
+        public void OnSceneLoadDone(NetworkRunner runner)
+        {
+            Debug.Log("OnSceneLoadDone");
+            if (runner.IsServer)
+            {
+                SpawnCoins();
+            }
+        }
+
+        
         // Empty required callbacks
         public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { }
         public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason) { }
         public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
         public void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, ArraySegment<byte> data) { }
         public void OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey key, float progress) { }
-        public void OnSceneLoadDone(NetworkRunner runner) { }
         public void OnSceneLoadStart(NetworkRunner runner) { }
         public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList) { }
         public void OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data) { }

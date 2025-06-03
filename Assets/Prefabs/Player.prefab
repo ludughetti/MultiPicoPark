@@ -101,7 +101,7 @@ GameObject:
   - component: {fileID: 3706474458786440610}
   - component: {fileID: 751054313876484412}
   - component: {fileID: 6559173837224365420}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Player
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -173,10 +173,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 359e87547b4a9914daf9380624f3d01c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gravity: 18
-  maxFallSpeed: -15
-  moveSpeed: 10
-  jumpForce: 12
 --- !u!50 &751054313876484412
 Rigidbody2D:
   serializedVersion: 5

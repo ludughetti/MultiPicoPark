@@ -1,3 +1,4 @@
+using Camera;
 using Fusion;
 using Network;
 using UnityEngine;
@@ -7,10 +8,9 @@ namespace Player
     [RequireComponent(typeof(NetworkTransform), typeof(Rigidbody2D))]
     public class PlayerController : NetworkBehaviour
     {
-        /*[SerializeField] private float gravity = 18f;
-        [SerializeField] private float maxFallSpeed = -15f;
-        [SerializeField] private float moveSpeed = 10f;
-        [SerializeField] private float jumpForce = 12f;*/
+        // Movement bounds
+        private Transform _minBounds;
+        private Transform _maxBounds;
         
         // Server settings
         private float _gravity;
@@ -24,6 +24,9 @@ namespace Player
         private Vector2 _velocity;
         private int _groundLayer;
         
+        // Network data
+        private int _currentScore = 0;
+        
         private void Awake()
         {
             // Setup player height
@@ -34,10 +37,20 @@ namespace Player
         public override void Spawned()
         {
             if (Object.HasInputAuthority)
+            {
                 NetworkManager.Instance.LocalPlayer = this;
+                
+                // Setup camera follow if present
+                var cameraFollow = UnityEngine.Camera.main?.GetComponent<CameraFollow>();
+                cameraFollow?.SetTarget(transform);
+            }
             
             // Reset player settings
             _velocity = Vector2.zero;
+            
+            // Initialize movement bounds
+            _minBounds = NetworkManager.Instance.playerMinBounds;
+            _maxBounds = NetworkManager.Instance.playerMaxBounds;
             
             // Initialize movement settings from NetworkManager
             var settings = NetworkManager.Instance.movementSettings;
@@ -73,6 +86,10 @@ namespace Player
                 newPosition.y = clampedPos.Value.y;
                 _velocity.y = 0;
             }
+            
+            // Clamp movement within bounds
+            newPosition.x = Mathf.Clamp(newPosition.x, _minBounds.position.x, _maxBounds.position.x);
+            newPosition.y = Mathf.Clamp(newPosition.y, _minBounds.position.y, _maxBounds.position.y);
 
             // Move manually
             transform.position = new Vector3(newPosition.x, newPosition.y, transform.position.z);
@@ -140,5 +157,14 @@ namespace Player
             var correctedY = groundY + _playerHalfHeight;
             return new Vector2(transform.position.x, correctedY);
         } 
+        
+        [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
+        public void OnPickUpCollectedRPC()
+        {
+            _currentScore++;
+            Debug.Log($"Player current score is: {_currentScore}");
+            //coinCounterUI.UpdateCount(_coinCount);
+            //coinPickupSound.Play();
+        }
     }
 }
