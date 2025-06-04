@@ -99,6 +99,7 @@ GameObject:
   - component: {fileID: 6589853700500510189}
   - component: {fileID: 4403765521177322752}
   - component: {fileID: 3931861249797069980}
+  - component: {fileID: -474527660900462227}
   m_Layer: 7
   m_Name: Coin
   m_TagString: Untagged
@@ -188,4 +189,22 @@ MonoBehaviour:
   NestedObjects: []
   NetworkedBehaviours:
   - {fileID: 4403765521177322752}
+  - {fileID: -474527660900462227}
   ForceRemoteRenderTimeframe: 0
+--- !u!114 &-474527660900462227
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7224983618321987490}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 158639473, guid: e725a070cec140c4caffb81624c8c787, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _stateAuthorityChangeErrorCorrectionDelta: 0
+  SyncScale: 0
+  SyncParent: 0
+  _autoAOIOverride: 1
+  DisableSharedModeInterpolation: 0

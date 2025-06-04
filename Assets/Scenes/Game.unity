@@ -259,8 +259,8 @@ MonoBehaviour:
     jumpForce: 10
     moveSpeed: 8
     groundLayerName: Ground
-  coinPrefab:
-    RawGuidValue: 25fe36d0bedc3e94fa3e875c6d8a2b51
+  pickUpManagerPrefab:
+    RawGuidValue: 9521bfcf496520148b34babd9229fe10
   coinSpawnPositions:
   - {fileID: 65085104}
   - {fileID: 62373631}
@@ -273,7 +273,7 @@ Transform:
   m_GameObject: {fileID: 513600661}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.0531859, y: 1.5968206, z: 0.01799275}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

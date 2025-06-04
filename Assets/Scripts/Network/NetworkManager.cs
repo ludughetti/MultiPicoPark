@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Fusion;
 using Fusion.Sockets;
 using Network.ServerData;
+using Objects;
 using Player;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 using Utils;
 
 namespace Network
@@ -26,13 +29,16 @@ namespace Network
         public Transform playerMaxBounds;
         public MovementSettings movementSettings;
         
+        [FormerlySerializedAs("itemSpawnManagerPrefab")]
         [Header("Pick-ups Settings")]
-        [SerializeField] private NetworkPrefabRef coinPrefab;
+        [SerializeField] private NetworkPrefabRef pickUpManagerPrefab;
         [SerializeField] private List<Transform> coinSpawnPositions;
         
         private readonly Dictionary<PlayerRef, NetworkObject> _activePlayers = new ();
         private NetworkRunner _networkRunner;
         private int _totalCoinsCollected = 0;
+        
+        private PickUpManager _pickUpSpawnManager;
         
         public event Action OnConnected;
         public event Action OnDisconnected;
@@ -189,13 +195,23 @@ namespace Network
             input.Set(networkInput);
         }
         
-        private void SpawnCoins()
+        public void OnSceneLoadDone(NetworkRunner runner)
         {
-            foreach (var position in coinSpawnPositions)
+            if (runner.IsServer)
             {
-                Debug.Log($"Spawning coin {position.position}");
-                _networkRunner.Spawn(coinPrefab, position.position, Quaternion.identity);
+                SpawnPickUpManager();
             }
+        }
+        
+        private void SpawnPickUpManager()
+        {
+            var spawnManagerObj = _networkRunner.Spawn(pickUpManagerPrefab, Vector3.zero, Quaternion.identity);
+
+            _pickUpSpawnManager = spawnManagerObj.GetComponent<PickUpManager>();
+
+            // Pass spawn positions to PickUpSpawnManager via RPC
+            var spawnPositions = coinSpawnPositions.Select(spawnPosition => spawnPosition.position).Select(dummy => (Vector3)dummy).ToArray();
+            _pickUpSpawnManager.RPC_SetSpawnPositions(spawnPositions);
         }
         
         public void OnCoinCollected(PlayerController player)
@@ -206,16 +222,6 @@ namespace Network
             _totalCoinsCollected++; // Global score
             //CheckIfAllCoinsCollected();
         }
-
-        public void OnSceneLoadDone(NetworkRunner runner)
-        {
-            Debug.Log("OnSceneLoadDone");
-            if (runner.IsServer)
-            {
-                SpawnCoins();
-            }
-        }
-
         
         // Empty required callbacks
         public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { }
